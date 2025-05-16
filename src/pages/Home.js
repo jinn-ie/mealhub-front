@@ -1,25 +1,155 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+
 import Party from '../components/Party';
 import Trends from '../components/Trends/Trends';
 import Map from '../components/Map';
+import Header from '../components/Header';
+import FoodRecommendation from '../components/FoodRecommendation';
+import LoadingOverlay from "../components/LoadingOverlay";
+
 import useScroll from '../hooks/useScroll';
 import useUserInfo from '../hooks/useUserInfo';
 import foodData from '../menu.json';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import LoadingOverlay from "../components/LoadingOverlay";
 
 import { fetchPartyCreate, fetchPartyJoin } from '../api/party';
 
+const HomeContainer = styled(motion.div)`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--background-color);
+  position: relative;
+  overflow-x: hidden;
+`;
+
+const ContentContainer = styled(motion.div)`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+`;
+
+const TrendsContainer = styled(motion.div)`
+  padding: 20px;
+  margin-top: 30px;
+`;
+
+const TrendsTitle = styled(motion.h2)`
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  position: relative;
+  display: inline-block;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background: var(--primary-color);
+    border-radius: 2px;
+  }
+`;
+
+const MapContainer = styled(motion.div)`
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 2;
+`;
+
+const FloatingActionButton = styled(motion.button)`
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--box-shadow-lg);
+  z-index: 1000;
+  border: none;
+  cursor: pointer;
+  
+  i {
+    font-size: 24px;
+  }
+`;
+
+// 애니메이션 변수
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { 
+      when: "beforeChildren",
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { 
+    y: 0, 
+    opacity: 1,
+    transition: { type: "spring", stiffness: 300, damping: 24 }
+  }
+};
+
+const fadeInVariants = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { duration: 0.5 }
+  },
+  exit: { 
+    opacity: 0,
+    transition: { duration: 0.2 }
+  }
+};
+
+const slideUpVariants = {
+  hidden: { y: "100%", opacity: 0 },
+  visible: { 
+    y: 0, 
+    opacity: 1,
+    transition: { 
+      type: "spring", 
+      stiffness: 300, 
+      damping: 30
+    }
+  },
+  exit: { 
+    y: "100%", 
+    opacity: 0,
+    transition: { duration: 0.3 }
+  }
+};
+
 function Home() {
-  const containerRef = useRef(null); 
-  useScroll(containerRef, "vertical"); // 세로 스크롤
+  const containerRef = useRef(null);
+  useScroll(containerRef, "vertical");
 
   const [load, setLoad] = useState(false);
-
   const [code, setCode] = useState("");
   const [participants, setParticipants] = useState(['정종욱', '하천수', '이서진']);
-  const [result, setResult] = useState({menu_id: null, menu_name:''});
+  const [result, setResult] = useState({menu_id: null, menu_name: '', imageUrl: ''});
 
   const [view, setVie] = useState({
     showParty: 0,
@@ -32,40 +162,46 @@ function Home() {
       ...prev,
       [key]: value,
     }))
-  }
+  };
 
   const [isHeightChanged, setIsHeightChanged] = useState(false);
   const [isFixed, setIsFixed] = useState(true);
 
   const loginId = localStorage.getItem("loginId");
   const { userInfo, loading, error } = useUserInfo();
-  console.log('hooks', userInfo);
-
-  var latitude = 37.5665;
-  var longitude = 126.9780;
-
+  
   const [userLocation, setUserLocation] = useState(null);
+  const navigate = useNavigate();
+  
+  const [trendsRef, trendsInView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
 
   const getLocation = () => {
+    setLoad(true);
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          latitude = position.coords.latitude;
-          longitude = position.coords.longitude;
-          console.log("위도:", latitude, "경도:", longitude);
-          // 서버에 좌표 보내기 등 추가 작업
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          
           setUserLocation({
-              lat: latitude,
-              lng: longitude
+            lat: latitude,
+            lng: longitude
           });
+          
+          setLoad(false);
         },
         (error) => {
           console.error("위치 정보를 가져오지 못했습니다.", error);
-          // 에러 대응 (예: 사용자에게 알림)
           setUserLocation({
             lat: 37.5665,
             lng: 126.9780
           });
+          
+          setLoad(false);
         }
       );
     } else {
@@ -73,16 +209,16 @@ function Home() {
       setUserLocation({
         lat: 37.5665,
         lng: 126.9780
-      })
+      });
+      
+      setLoad(false);
     }
-  }
+  };
 
   useEffect(() => {
-    if (!userLocation) return; // userLocation이 없으면 실행하지 않음
+    if (!userLocation) return;
     fetchRecommendation(userLocation.lat, userLocation.lng);
   }, [userLocation]);
-
-  const navigate = useNavigate();
 
   const fetchRecommendation = (lat, lng) => {
     setLoad(true);
@@ -96,66 +232,59 @@ function Home() {
         lat: lat,
         lon: lng,
         timestamp: new Date().toISOString().slice(0,-1),
-        user_id: userInfo.id,
+        user_id: userInfo?.id || 'guest',
       }),
     })
-    .then(res => {
-      console.log("서버 응답:", res);
-      return res.json();
-    })
+    .then(res => res.json())
     .then(body => {
-      console.log("응답 바디 : ", body);
+      const menuName = body.recommendations[0].menu_name;
       setResult({
         menu_id: body.recommendations[0].menu_id,
-        menu_name: body.recommendations[0].menu_name
+        menu_name: menuName,
+        imageUrl: foodData[menuName]?.url || 'https://via.placeholder.com/400x300?text=음식+이미지'
       });
+      setView('showRec', true);
     })
-    .then(() => {setView('showRec', true);})
-    .then(() => {setLoad(false)})
-  }
-
-  const calculateTotalHeight = () => {  // 전체 높이 계산
-    if (containerRef.current) {
-      const children = Array.from(containerRef.current.children);
-      const totalHeight = children.reduce((sum, child) => sum + child.offsetHeight, 0);
-      return totalHeight;
-    }
-  }
-
-  const removeParticipant = (name) => {
-    setParticipants((prevParticipants) => 
-      prevParticipants.filter((participant) => participant !== name)
-    );
-  }
+    .catch(err => {
+      console.error("추천 요청 오류:", err);
+      // 임시 데이터로 처리 (API 실패시)
+      const tempMenu = "비빔밥";
+      setResult({
+        menu_id: 1,
+        menu_name: tempMenu,
+        imageUrl: foodData[tempMenu]?.url || 'https://via.placeholder.com/400x300?text=음식+이미지'
+      });
+      setView('showRec', true);
+    })
+    .finally(() => {
+      setLoad(false);
+    });
+  };
 
   const skipMenu = () => {
-    console.log("return?");
-    if (!result) return;
-    // 불만족 fetch
-    console.log("result", result);
+    if (!result || !result.menu_id) return;
+    
+    // 불만족 피드백 전송
     fetch("https://mealhub.duckdns.org/api/feedback/skip", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        user_id: userInfo.id,
+        user_id: userInfo?.id || 'guest',
         menu_id: result.menu_id,
         timestamp: new Date().toISOString().slice(0, -1),
         lat: userLocation.lat,
         lon: userLocation.lng
       })
-    })
-    .then(res => {
-      console.log("서버 응답 : ", res);
-    })
+    }).catch(err => console.error("피드백 전송 오류:", err));
 
-    // 지도 삭제
+    // 지도 숨기기
     setView('showMap', false);
 
-    // 추천 fetch
+    // 새로운 추천 요청
     fetchRecommendation(userLocation.lat, userLocation.lng);
-  }
+  };
 
   useEffect(() => {
     if (calculateTotalHeight() <= window.innerHeight) setIsFixed(true);
@@ -163,100 +292,110 @@ function Home() {
     setIsHeightChanged(false);
   }, [isHeightChanged]);
 
-  return (
-    <div className="App" ref={containerRef}>
-      {load && <LoadingOverlay />}
-      <div className="orange-nav">
-        <h3 onClick={() => {
-          setView('showParty', 0);
-          setView('showRec', false);
-          setView('showMap', false);
-          setIsHeightChanged(true);
-        }}>MEALHUB</h3>
-        <div className="nav-buttons">
-          <button className="nav-btn partybtn" onClick={() => {
-            if (view.showParty == 0) {
-              setView('showParty', 1);
-            } else {
-              setView('showParty', 0);
-            }
-          }}>
-            <i className="fa-solid fa-handshake"></i>
-          </button>
-          <button className="nav-btn like">
-            <i className="fa-solid fa-heart"></i>
-          </button>
-          <button className="nav-btn my" data-user={loginId ? loginId+"님" : "게스트"} onClick={() => {
-            if (loginId) {
-              navigate("/mypage");
-            } else {
-              navigate("/login")
-            }
-          }}>
-            <i className="fa-solid fa-user"></i>
-          </button>
-        </div>
-      </div>
+  const calculateTotalHeight = () => {
+    if (containerRef.current) {
+      const children = Array.from(containerRef.current.children);
+      const totalHeight = children.reduce((sum, child) => sum + child.offsetHeight, 0);
+      return totalHeight;
+    }
+    return 0;
+  };
 
-      <Party
-        showParty={view.showParty}
-        setShowParty={(value) => setView('showParty', value)}
-        code={code}
-        setCode={setCode}
-        fetchPartyCreate={fetchPartyCreate}
-        fetchPartyJoin={fetchPartyJoin}
-      />
+  // 파티 토글 이벤트 수신 리스너 추가
+  useEffect(() => {
+    const handleToggleParty = () => {
+      setView('showParty', view.showParty === 0 ? 1 : 0);
+    };
+
+    // 이벤트 리스너 등록
+    window.addEventListener('toggleParty', handleToggleParty);
+
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      window.removeEventListener('toggleParty', handleToggleParty);
+    };
+  }, [view.showParty]);
+
+  return (
+    <HomeContainer
+      ref={containerRef}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {load && <LoadingOverlay />}
       
-      {!view.showRec && (
-        <div className="rec">
-          <h2>오늘 뭐 먹지?</h2>
-          <p className="rec-subtitle">배고픈 당신을 위한 메뉴 추천</p>
-          <button className='create-rec' onClick={() => {
-            if (!userInfo) {
+      <Header />
+      
+      <ContentContainer>
+        <AnimatePresence>
+          <Party
+            showParty={view.showParty}
+            setShowParty={(value) => setView('showParty', value)}
+            code={code}
+            setCode={setCode}
+            fetchPartyCreate={fetchPartyCreate}
+            fetchPartyJoin={fetchPartyJoin}
+          />
+        </AnimatePresence>
+        
+        <FoodRecommendation 
+          showRec={view.showRec}
+          result={result}
+          userInfo={userInfo}
+          skipMenu={skipMenu}
+          setView={setView}
+          setIsHeightChanged={setIsHeightChanged}
+        />
+        
+        <AnimatePresence>
+          {view.showMap && (
+            <MapContainer
+              variants={slideUpVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <Map
+                userLocation={userLocation}
+                resultMenu={result.menu_name}
+              />
+            </MapContainer>
+          )}
+        </AnimatePresence>
+        
+        {!view.showRec && !view.showMap && (
+          <TrendsContainer
+            ref={trendsRef}
+            variants={fadeInVariants}
+            initial="hidden"
+            animate={trendsInView ? "visible" : "hidden"}
+          >
+            <TrendsTitle variants={itemVariants}>인기 메뉴</TrendsTitle>
+            <Trends />
+          </TrendsContainer>
+        )}
+      </ContentContainer>
+      
+      {!view.showRec && !view.showMap && (
+        <FloatingActionButton
+          whileHover={{ scale: 1.1, boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}
+          whileTap={{ scale: 0.9 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          onClick={() => {
+            if (!userInfo && loading) {
               alert("유저 정보를 불러오는 중입니다...");
             } else {
               getLocation();
             }
-          }}>
-            <i className="fa-solid fa-utensils"></i> 추천 받기
-          </button>
-        </div>
+          }}
+        >
+          <i className="fa-solid fa-utensils"></i>
+        </FloatingActionButton>
       )}
-
-      {view.showRec && (
-        <div className="recommendation-container">
-          <h2>오늘의 추천 메뉴</h2>
-          <div className="menu-name">{ result.menu_name }</div>
-          <div className="food-image-container">
-            <img className='res-img' src={ foodData[result.menu_name].url } alt={result.menu_name} />
-          </div>
-          <div className='buttons'>
-            <button className="show-map" disabled={!userInfo} onClick={() => {
-              setView('showMap', true);
-              setIsHeightChanged(true);
-            }}>
-              <i className="fa-solid fa-map-location-dot"></i> 주변 식당 찾기
-            </button>
-            <button className="reload" disabled={!userInfo} onClick={() => {
-              skipMenu();
-              setIsHeightChanged(true);
-            }}>
-              <i className="fa-solid fa-arrow-rotate-right"></i> 다른 메뉴 추천
-            </button>
-          </div>
-        </div>
-      )}
-
-      {view.showMap && (
-        <div className="map-wrap">
-          <Map lat={userLocation.lat} lng={userLocation.lng} kw={result}/>
-        </div>
-      )}
-
-      {view.showMap && (
-        <Trends lat={userLocation.lat} lng={userLocation.lng}/>
-      )}
-    </div>
+    </HomeContainer>
   );
 }
 

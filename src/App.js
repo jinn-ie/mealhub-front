@@ -1,22 +1,66 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Home from './pages/Home';
-import Signup1 from './pages/Signup1';
-import Signup2 from './pages/Signup2';
-import Mypage from './pages/Mypage';
+import { AnimatePresence } from 'framer-motion';
+import styled from 'styled-components';
+import GlobalStyles from './styles/GlobalStyles';
+import LoadingOverlay from './components/LoadingOverlay';
+
+// 지연 로딩 적용
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup1 = lazy(() => import('./pages/Signup1'));
+const Signup2 = lazy(() => import('./pages/Signup2'));
+const Mypage = lazy(() => import('./pages/Mypage'));
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+  background-color: var(--background-color);
+`;
+
+const AppContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  background-color: var(--background-color);
+  
+  @media (min-width: 768px) {
+    width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    box-shadow: var(--box-shadow-lg);
+  }
+`;
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup1" element={<Signup1 />} />
-        <Route path="/signup2" element={<Signup2 />} />
-        <Route path="/mypage" element={<Mypage />} />
-      </Routes>
-    </Router>
+    <>
+      <GlobalStyles />
+      <AppContainer>
+        <Router>
+          <Suspense fallback={
+            <LoadingContainer>
+              <LoadingOverlay />
+            </LoadingContainer>
+          }>
+            <AnimatePresence mode="wait">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup1" element={<Signup1 />} />
+                <Route path="/signup2" element={<Signup2 />} />
+                <Route path="/mypage" element={<Mypage />} />
+              </Routes>
+            </AnimatePresence>
+          </Suspense>
+        </Router>
+      </AppContainer>
+    </>
   );
 }
 
