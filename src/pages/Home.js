@@ -69,28 +69,6 @@ const MapContainer = styled(motion.div)`
   z-index: 2;
 `;
 
-const FloatingActionButton = styled(motion.button)`
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--primary-color);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--box-shadow-lg);
-  z-index: 1000;
-  border: none;
-  cursor: pointer;
-  
-  i {
-    font-size: 24px;
-  }
-`;
-
 // 애니메이션 변수
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -376,25 +354,6 @@ function Home() {
           </TrendsContainer>
         )}
       </ContentContainer>
-      
-      {!view.showRec && !view.showMap && (
-        <FloatingActionButton
-          whileHover={{ scale: 1.1, boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}
-          whileTap={{ scale: 0.9 }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          onClick={() => {
-            if (!userInfo && loading) {
-              alert("유저 정보를 불러오는 중입니다...");
-            } else {
-              getLocation();
-            }
-          }}
-        >
-          <i className="fa-solid fa-utensils"></i>
-        </FloatingActionButton>
-      )}
     </HomeContainer>
   );
 }

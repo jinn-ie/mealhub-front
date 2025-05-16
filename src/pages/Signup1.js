@@ -1,54 +1,161 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
+import { motion } from 'framer-motion';
+import Header from "../components/Header";
+import { 
+  Button, 
+  InputGroup, 
+  Label, 
+  Input, 
+  Page, 
+  Container, 
+  Title,
+  Row
+} from '../styles/CommonComponents';
+
+// 회원가입 페이지 스타일
+const SignupContainer = styled(Page)`
+  padding: 0;
+`;
+
+const ContentContainer = styled(Container)`
+  padding: 40px 20px;
+`;
+
+const SignupForm = styled(motion.form)`
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+`;
+
+const FormTitle = styled(Title)`
+  margin-bottom: 30px;
+  text-align: center;
+`;
+
+const SubmitButton = styled(Button)`
+  margin-top: 16px;
+  width: 100%;
+`;
+
+const LoginLink = styled(motion.a)`
+  text-align: center;
+  margin-top: 20px;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 14px;
+  
+  &:hover {
+    color: var(--primary-color);
+  }
+`;
+
+const ErrorMessage = styled(motion.div)`
+  color: var(--error);
+  font-size: 14px;
+  margin-top: -12px;
+  margin-bottom: -12px;
+`;
+
+const CheckButton = styled(Button)`
+  height: 48px;
+  padding: 0 16px;
+  font-size: 14px;
+  margin-left: 8px;
+  white-space: nowrap;
+`;
+
+const InputWithButton = styled.div`
+  display: flex;
+  align-items: center;
+  width: 100%;
+`;
+
+// 애니메이션 변수
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { type: "spring", stiffness: 300, damping: 24 }
+  }
+};
 
 function Signup1() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({ id: "", pwd: "" });
+  const [formData, setFormData] = useState({ id: "", pwd: "", checkpwd: "" });
   const [error, setError] = useState(null);
+  const [formError, setFormError] = useState({id: "", pwd: "", checkpwd: ""});
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    // 입력 시 해당 필드의 에러 메시지 초기화
+    setFormError({...formError, [e.target.name]: ""});
+  };
+
+  const checkIdDuplicate = () => {
+    if (!formData.id) {
+      setFormError({...formError, id: "아이디를 먼저 입력해주세요."});
+      return;
+    }
+    
+    if (!formData.id.match(/^[a-zA-Z0-9]{4,12}$/)) {
+      setFormError({...formError, id: "아이디는 4~12자의 영문 대소문자와 숫자로만 구성되어야 합니다."});
+      return;
+    }
+    
+    // 여기에 ID 중복 체크 API 호출 추가
+    alert("사용 가능한 아이디입니다.");
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     // 유효성 검사
-    let validationError = "";
+    const newErrors = {};
 
     if (!formData.id) {
-        validationError = "아이디를 입력해주세요.";
+      newErrors.id = "아이디를 입력해주세요.";
+    } else if (!formData.id.match(/^[a-zA-Z0-9]{4,12}$/)) {
+      newErrors.id = "아이디는 4~12자의 영문 대소문자와 숫자로만 구성되어야 합니다.";
     }
 
-    else if (!formData.id.match(/^[a-zA-Z0-9]{4,12}$/)) {
-        validationError = "아이디는 4~12자의 영문 대소문자와 숫자로만 구성되어야 합니다.";
+    if (!formData.pwd) {
+      newErrors.pwd = "비밀번호를 입력해주세요.";
+    } else if (!formData.pwd.match(/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8,16}$/)) {
+      newErrors.pwd = "비밀번호는 8~16자 영문 대소문자와 숫자로만 구성되어야 합니다.";
+    } else if (/\s/.test(formData.pwd)) {
+      newErrors.pwd = "비밀번호는 공백을 포함할 수 없습니다.";
     }
 
-    else if (!formData.pwd) {
-        validationError = "비밀번호를 입력해주세요.";
+    if (!formData.checkpwd) {
+      newErrors.checkpwd = "비밀번호 확인을 입력해주세요.";
+    } else if (formData.pwd !== formData.checkpwd) {
+      newErrors.checkpwd = "비밀번호가 일치하지 않습니다.";
     }
 
-    else if (!formData.pwd.match(/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8,16}$/)) {
-        validationError = "비밀번호는 8~16자 영문 대소문자와 숫자로만 구성되어야 합니다.";
+    if (Object.values(newErrors).some(error => error)) {
+      setFormError(newErrors);
+      return;
     }
-
-    else if (/\s/.test(formData.pwd)) {
-        validationError = "비밀번호는 공백을 포함할 수 없습니다.";
-    }
-
-    else if (!formData.checkpwd) {
-        validationError = "비밀번호 확인을 입력해주세요.";
-    }
-
-    else if (formData.pwd !== formData.checkpwd) {
-        validationError = "비밀번호가 일치하지 않습니다.";
-    }
-
-    if (Object.keys(validationError).length > 0) {
-        setError(validationError); // 에러 메시지 설정
-        return; // 에러가 있으면 제출하지 않음
-    }
+    
     navigate("/signup2", { state: { id: formData.id, pwd: formData.pwd }});
   };
 
@@ -60,49 +167,87 @@ function Signup1() {
   }, [error]);
 
   return (
-    <div className="App Login">
-        <div className="orange-nav">
-        <h3 onClick={() => {
-          navigate("/");
-        }}>MEALHUB</h3>
-        </div>
-        <h2>회원가입</h2>
-        <form className="login-form signup1" onSubmit={handleSubmit}>
-            {/* <div className="form-group">
-                <label>e-mail</label>
-                    <div className="input">
-                        <input type="email" name="id" onChange={handleChange} />
-                        <p>@</p>
-                        <input type="text" name="domain" list="domainList"></input>
-                        <datalist id="domainList">
-                            <option value="naver.com" />
-                            <option value="daum.net" />
-                            <option value="gmail.com" />
-                            <option value="hanmail.net" />
-                            <option value="pusan.ac.kr" />
-                        </datalist>
-                    </div>
-            </div> */}
-            
-            <div className="form-group">
-                <label>ID</label>
-                <div className="input-group">
-                <input type="text" className="id" name="id" onChange={handleChange} />
-                <div className="checkid">중복<br/>확인</div>
-                </div>
-            </div>
-            <div className="form-group">
-                <label>비밀번호</label>
-                <input type="password" name="pwd" onChange={handleChange} />
-            </div>
-            <div className="form-group">
-                <label>비밀번호 확인</label>
-                <input type="password" name="checkpwd" onChange={handleChange} />
-            </div>
-            <button className="submit" type="submit">다음</button>
-            <a onClick={() => navigate("/login")}>계정이 있으시다면? 로그인</a>
-        </form>
-    </div>
+    <SignupContainer>
+      <Header />
+      
+      <ContentContainer
+        as={motion.div}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <FormTitle variants={itemVariants}>회원가입</FormTitle>
+        
+        <SignupForm 
+          onSubmit={handleSubmit}
+          variants={containerVariants}
+        >
+          <InputGroup as={motion.div} variants={itemVariants}>
+            <Label>아이디</Label>
+            <InputWithButton>
+              <Input 
+                type="text" 
+                name="id" 
+                value={formData.id}
+                onChange={handleChange} 
+                placeholder="4~12자 영문, 숫자"
+              />
+              <CheckButton
+                type="button"
+                onClick={checkIdDuplicate}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                중복확인
+              </CheckButton>
+            </InputWithButton>
+            {formError.id && <ErrorMessage>{formError.id}</ErrorMessage>}
+          </InputGroup>
+          
+          <InputGroup as={motion.div} variants={itemVariants}>
+            <Label>비밀번호</Label>
+            <Input 
+              type="password" 
+              name="pwd" 
+              value={formData.pwd}
+              onChange={handleChange} 
+              placeholder="8~16자 영문, 숫자 조합"
+            />
+            {formError.pwd && <ErrorMessage>{formError.pwd}</ErrorMessage>}
+          </InputGroup>
+          
+          <InputGroup as={motion.div} variants={itemVariants}>
+            <Label>비밀번호 확인</Label>
+            <Input 
+              type="password" 
+              name="checkpwd" 
+              value={formData.checkpwd}
+              onChange={handleChange} 
+              placeholder="비밀번호 재입력"
+            />
+            {formError.checkpwd && <ErrorMessage>{formError.checkpwd}</ErrorMessage>}
+          </InputGroup>
+          
+          <SubmitButton 
+            as={motion.button}
+            type="submit"
+            variants={itemVariants}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            다음
+          </SubmitButton>
+          
+          <LoginLink 
+            onClick={() => navigate("/login")}
+            variants={itemVariants}
+            whileHover={{ color: 'var(--primary-color)' }}
+          >
+            계정이 있으시다면? 로그인
+          </LoginLink>
+        </SignupForm>
+      </ContentContainer>
+    </SignupContainer>
   );
 }
 

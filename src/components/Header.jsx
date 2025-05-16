@@ -178,6 +178,17 @@ const Header = () => {
     alert('찜 목록 기능은 곧 구현될 예정입니다!');
   };
   
+  // 사용자 프로필 관련 동작
+  const handleUserAction = () => {
+    if (loginId) {
+      // 로그인 상태면 드롭다운 토글
+      toggleMenu();
+    } else {
+      // 로그인 안 된 상태면 로그인 페이지로 이동
+      navigate('/login');
+    }
+  };
+  
   const toggleMenu = () => {
     setShowMenu(!showMenu);
   };
@@ -228,7 +239,7 @@ const Header = () => {
             variants={buttonVariants}
             whileHover="hover"
             whileTap="tap"
-            onClick={toggleMenu}
+            onClick={handleUserAction}
           >
             <i className="fa-solid fa-user"></i>
           </IconButton>
@@ -236,67 +247,38 @@ const Header = () => {
       </HeaderContainer>
       
       <AnimatePresence>
-        {showMenu && (
+        {showMenu && loginId && (
           <MenuContainer
             variants={menuVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
           >
-            {loginId ? (
-              <>
-                <MenuItem 
-                  onClick={() => handleNavigation('/mypage')}
-                  custom={0}
-                  variants={menuItemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                >
-                  <i className="fa-solid fa-user-circle"></i>
-                  <span>내 프로필</span>
-                </MenuItem>
-                <MenuItem 
-                  onClick={() => {
-                    localStorage.removeItem("loginId");
-                    handleNavigation('/login');
-                  }}
-                  custom={1}
-                  variants={menuItemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                >
-                  <i className="fa-solid fa-sign-out-alt"></i>
-                  <span>로그아웃</span>
-                </MenuItem>
-              </>
-            ) : (
-              <>
-                <MenuItem 
-                  onClick={() => handleNavigation('/login')}
-                  custom={0}
-                  variants={menuItemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                >
-                  <i className="fa-solid fa-sign-in-alt"></i>
-                  <span>로그인</span>
-                </MenuItem>
-                <MenuItem 
-                  onClick={() => handleNavigation('/signup1')}
-                  custom={1}
-                  variants={menuItemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                >
-                  <i className="fa-solid fa-user-plus"></i>
-                  <span>회원가입</span>
-                </MenuItem>
-              </>
-            )}
+            <MenuItem 
+              onClick={() => handleNavigation('/mypage')}
+              custom={0}
+              variants={menuItemVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <i className="fa-solid fa-user-circle"></i>
+              <span>내 프로필</span>
+            </MenuItem>
+            <MenuItem 
+              onClick={() => {
+                localStorage.removeItem("loginId");
+                handleNavigation('/login');
+              }}
+              custom={1}
+              variants={menuItemVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <i className="fa-solid fa-sign-out-alt"></i>
+              <span>로그아웃</span>
+            </MenuItem>
             <MenuItem 
               onClick={() => handleNavigation('/')}
               custom={2}
