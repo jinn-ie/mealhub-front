@@ -10,6 +10,7 @@ function Mypage() {
     const containerRef = useRef(null); 
     const navigate = useNavigate();
     const token = localStorage.getItem("token");
+    const { refreshUserInfo } = useUserInfo();
 
 
     // 내 정보 보기 및 수정
@@ -48,6 +49,33 @@ function Mypage() {
 
     const handleSubmit = async (e) => {
     }  
+
+    const handleLogout = async () => {
+        try {
+            const response = await fetch("https://mealhub.duckdns.org/backend/user/logout", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                },
+            });
+            console.log(response);
+
+            if (response.ok) {
+                // 로컬스토리지에서 토큰 제거 및 캐시 초기화
+                localStorage.clear();
+                await refreshUserInfo();
+
+                alert("로그아웃 되었습니다."); // 알림 메시지
+                navigate("/");  // 홈으로 이동
+            } else {
+                throw new Error("로그아웃 실패");
+            }
+        } catch (error) {
+            console.error("로그아웃 에러: ", error);
+            alert("로그아웃 중 오류가 발생했습니다.");
+        }
+    };
 
     const handleDeleteAccount = async () => {
       const confirmDelete = window.confirm("정말로 탈퇴하시겠습니까?");

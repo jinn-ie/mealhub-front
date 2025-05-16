@@ -430,6 +430,7 @@ function Home() {
               <Map
                 userLocation={userLocation}
                 resultMenu={result.menu_name}
+                menuId={result.menu_id}
               />
             </MapContainer>
           )}

@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import LoadingOverlay from "../components/LoadingOverlay";
 import Header from "../components/Header";
+import useUserInfo from "../hooks/useUserInfo";
 import { 
   Button, 
   InputGroup, 
@@ -86,6 +87,7 @@ const itemVariants = {
 
 function Login() {
   const navigate = useNavigate();
+  const { refreshUserInfo } = useUserInfo();
 
   const [formData, setFormData] = useState({id: "", pwd: ""});
   const [error, setError] = useState(null);
@@ -140,6 +142,10 @@ function Login() {
         const token = await response.text();
         localStorage.setItem("loginId", formData.id);
         localStorage.setItem("token", token);
+        
+        // 로그인 성공 시 사용자 정보 즉시 갱신
+        await refreshUserInfo();
+        
         navigate("/");
       }
     } catch (error) {

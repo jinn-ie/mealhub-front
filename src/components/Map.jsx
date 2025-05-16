@@ -1,12 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import useUserInfo from '../hooks/useUserInfo';
 
-const Map = ({lat, lng, kw}) => {
+const Map = ({ userLocation, resultMenu, menuId }) => {
     const mapContainer = useRef(null);
+    const lat = userLocation?.lat;
+    const lng = userLocation?.lng;
 
     const apiKey = process.env.REACT_APP_KAKAO_API_KEY;
-    const [keyword, setKeyword] = useState(kw.menu_name); // 키워드 상태 관리
-    console.log("keyword",keyword);
+    const [keyword, setKeyword] = useState(resultMenu || ""); // 키워드 상태 관리
+    console.log("keyword", keyword);
     const { userInfo, loading, error } = useUserInfo();
 
     const [map, setMap] = useState(null); // map 객체 상태 관리
@@ -24,7 +26,7 @@ const Map = ({lat, lng, kw}) => {
             },
             body: JSON.stringify({
                 user_id: userInfo.id,
-                menu_id: kw.menu_id,
+                menu_id: menuId || 1, // props로 전달받은 menu_id 사용
                 timestamp: new Date().toISOString().slice(0,- 1),
                 lat: lat,
                 lon: lng
@@ -33,6 +35,9 @@ const Map = ({lat, lng, kw}) => {
         .then(res => {
             console.log("서버 응답:", res);
         })
+        .catch(err => {
+            console.error("피드백 전송 오류:", err);
+        });
 
 
         const script = document.createElement('script');
@@ -60,7 +65,7 @@ const Map = ({lat, lng, kw}) => {
         return () => {
             document.head.removeChild(script);
         };
-    }, [apiKey, userInfo]);
+    }, [apiKey, userInfo, lat, lng, keyword, menuId]);
 
     useEffect(() => {
         if (map) {
@@ -89,8 +94,8 @@ const Map = ({lat, lng, kw}) => {
                 if (result[i].region_type === 'H') {
                     const dong = result[i].address_name.trim().split(" ").pop();
                     setCenterAddr(dong); // 주소 상태 업데이트
-                    setKeyword(dong + " " + kw.menu_name); // 키워드 상태 업데이트
-                    setSearchInput(dong + " " + kw.menu_name);
+                    setKeyword(dong + " " + resultMenu); // 키워드 상태 업데이트
+                    setSearchInput(dong + " " + resultMenu);
                     break;
                 }
             }
@@ -278,7 +283,7 @@ const Map = ({lat, lng, kw}) => {
 
     return (
         <div className="map-container">
-            <h3 className="map-title">{kw.menu_name} 식당 찾기</h3>
+            <h3 className="map-title">{resultMenu} 식당 찾기</h3>
             <p className="map-subtitle">현재 위치: {centerAddr || "위치 확인 중..."}</p>
             
             <div className="map_wrap">

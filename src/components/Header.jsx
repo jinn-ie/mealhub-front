@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
+import useUserInfo from '../hooks/useUserInfo';
 
 const HeaderContainer = styled(motion.header)`
   display: flex;
@@ -165,6 +166,7 @@ const Header = () => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const loginId = localStorage.getItem("loginId");
+  const { refreshUserInfo } = useUserInfo();
   
   // 파티 관련 기능 추가
   const toggleParty = () => {
@@ -196,6 +198,20 @@ const Header = () => {
   const handleNavigation = (path) => {
     navigate(path);
     setShowMenu(false);
+  };
+  
+  // 로그아웃 처리 함수
+  const handleLogout = async () => {
+    // 캐시 및 로그인 정보 초기화
+    localStorage.removeItem("loginId");
+    localStorage.removeItem("token");
+    
+    // 사용자 정보 상태 갱신
+    await refreshUserInfo();
+    
+    // 메뉴 닫고 로그인 페이지로 이동
+    setShowMenu(false);
+    navigate('/login');
   };
   
   return (
@@ -266,10 +282,7 @@ const Header = () => {
               <span>내 프로필</span>
             </MenuItem>
             <MenuItem 
-              onClick={() => {
-                localStorage.removeItem("loginId");
-                handleNavigation('/login');
-              }}
+              onClick={handleLogout}
               custom={1}
               variants={menuItemVariants}
               initial="hidden"
