@@ -162,7 +162,7 @@ const buttonVariants = {
   tap: { scale: 0.9 }
 };
 
-const Header = () => {
+const Header = ({ resetHome }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const loginId = localStorage.getItem("loginId");
@@ -214,6 +214,15 @@ const Header = () => {
     navigate('/login');
   };
   
+  // 로고 클릭 핸들러 수정
+  const handleLogoClick = () => {
+    // resetHome 함수가 전달된 경우 실행
+    if (resetHome) {
+      resetHome();
+    }
+    handleNavigation('/');
+  };
+  
   return (
     <>
       <HeaderContainer
@@ -222,7 +231,7 @@ const Header = () => {
         transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
       >
         <Logo
-          onClick={() => handleNavigation('/')}
+          onClick={handleLogoClick}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -293,7 +302,10 @@ const Header = () => {
               <span>로그아웃</span>
             </MenuItem>
             <MenuItem 
-              onClick={() => handleNavigation('/')}
+              onClick={() => {
+                if (resetHome) resetHome();
+                handleNavigation('/');
+              }}
               custom={2}
               variants={menuItemVariants}
               initial="hidden"

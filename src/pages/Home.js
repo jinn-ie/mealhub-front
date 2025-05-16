@@ -142,6 +142,16 @@ function Home() {
     }))
   };
 
+  // 초기 화면으로 돌아가는 함수
+  const resetHome = () => {
+    // 추천 화면 숨기기
+    setView('showRec', false);
+    // 지도 숨기기
+    setView('showMap', false);
+    // 파티 화면 숨기기
+    setView('showParty', 0);
+  };
+
   const [isHeightChanged, setIsHeightChanged] = useState(false);
   const [isFixed, setIsFixed] = useState(true);
 
@@ -396,7 +406,7 @@ function Home() {
     >
       {load && <LoadingOverlay />}
       
-      <Header />
+      <Header resetHome={resetHome} />
       
       <ContentContainer>
         <AnimatePresence>
