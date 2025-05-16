@@ -59,11 +59,16 @@ const IconButton = styled(motion.button)`
     visibility: hidden;
     transition: 0.3s ease;
     white-space: nowrap;
+    z-index: 1000;
   }
   
   &:hover::after {
     opacity: 1;
     visibility: visible;
+  }
+  
+  &.active {
+    color: var(--primary-color);
   }
 `;
 
@@ -73,29 +78,48 @@ const MenuContainer = styled(motion.div)`
   right: 0;
   width: 220px;
   background: white;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   z-index: 100;
   overflow: hidden;
   border-radius: var(--border-radius-md);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 10px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    transform: rotate(45deg);
+    box-shadow: -2px -2px 5px rgba(0,0,0,0.04);
+  }
 `;
 
 const MenuItem = styled(motion.div)`
-  padding: 16px 20px;
+  padding: 14px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
   color: var(--text-primary);
   border-bottom: 1px solid rgba(0,0,0,0.05);
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: all 0.2s ease;
   
   &:hover {
-    background: rgba(0, 0, 0, 0.02);
+    background: rgba(var(--primary-color-rgb), 0.05);
+    transform: translateX(4px);
+  }
+  
+  &:last-child {
+    border-bottom: none;
   }
   
   i {
     color: var(--primary-color);
     font-size: 18px;
+    width: 24px;
+    text-align: center;
   }
 `;
 
@@ -274,6 +298,7 @@ const Header = ({ resetHome }) => {
           
           <IconButton 
             ref={userBtnRef}
+            className={showMenu ? "active" : ""}
             data-tooltip={loginId ? `${loginId}님` : "로그인 필요"}
             variants={buttonVariants}
             whileHover="hover"
