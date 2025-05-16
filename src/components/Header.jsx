@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,6 +32,7 @@ const NavButtons = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
 `;
 
 const IconButton = styled(motion.button)`
@@ -68,15 +69,14 @@ const IconButton = styled(motion.button)`
 
 const MenuContainer = styled(motion.div)`
   position: absolute;
-  top: 100%;
+  top: calc(100% + 10px);
   right: 0;
-  width: 100%;
+  width: 220px;
   background: white;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  z-index: 20;
+  z-index: 100;
   overflow: hidden;
-  border-bottom-left-radius: var(--border-radius-md);
-  border-bottom-right-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-md);
 `;
 
 const MenuItem = styled(motion.div)`
@@ -102,55 +102,48 @@ const MenuItem = styled(motion.div)`
 // 애니메이션 변수
 const menuVariants = {
   hidden: {
-    height: 0,
-    opacity: 0
+    opacity: 0,
+    y: -10,
+    scale: 0.95
   },
   visible: {
-    height: 'auto',
     opacity: 1,
+    y: 0,
+    scale: 1,
     transition: {
-      height: {
-        duration: 0.3
-      },
-      opacity: {
-        duration: 0.2,
-        delay: 0.1
-      }
+      duration: 0.2,
+      ease: 'easeOut',
+      when: "beforeChildren",
+      staggerChildren: 0.05
     }
   },
   exit: {
-    height: 0,
     opacity: 0,
+    y: -10,
+    scale: 0.95,
     transition: {
-      opacity: {
-        duration: 0.2
-      },
-      height: {
-        duration: 0.3,
-        delay: 0.1
-      }
+      duration: 0.15,
+      ease: 'easeIn'
     }
   }
 };
 
 const menuItemVariants = {
-  hidden: { opacity: 0, x: 20 },
+  hidden: { opacity: 0, x: 10 },
   visible: i => ({
     opacity: 1,
     x: 0,
     transition: {
-      delay: i * 0.1,
-      duration: 0.3
+      delay: i * 0.05,
+      duration: 0.2
     }
   }),
-  exit: i => ({
+  exit: { 
     opacity: 0,
-    x: 20,
     transition: {
-      duration: 0.2,
-      delay: i * 0.05
+      duration: 0.1
     }
-  })
+  }
 };
 
 const buttonVariants = {
@@ -167,7 +160,27 @@ const Header = ({ resetHome }) => {
   const [showMenu, setShowMenu] = useState(false);
   const loginId = localStorage.getItem("loginId");
   const { refreshUserInfo } = useUserInfo();
+  const menuRef = useRef(null);
+  const userBtnRef = useRef(null);
   
+  // 바깥 클릭시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMenu && 
+          menuRef.current && 
+          !menuRef.current.contains(event.target) &&
+          userBtnRef.current && 
+          !userBtnRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
+
   // 파티 관련 기능 추가
   const toggleParty = () => {
     // Home 컴포넌트가 이 함수를 통해 파티 상태를 토글할 수 있도록 이벤트 방출
@@ -260,6 +273,7 @@ const Header = ({ resetHome }) => {
           </IconButton>
           
           <IconButton 
+            ref={userBtnRef}
             data-tooltip={loginId ? `${loginId}님` : "로그인 필요"}
             variants={buttonVariants}
             whileHover="hover"
@@ -268,56 +282,57 @@ const Header = ({ resetHome }) => {
           >
             <i className="fa-solid fa-user"></i>
           </IconButton>
+          
+          <AnimatePresence>
+            {showMenu && loginId && (
+              <MenuContainer
+                ref={menuRef}
+                variants={menuVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <MenuItem 
+                  onClick={() => handleNavigation('/mypage')}
+                  custom={0}
+                  variants={menuItemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  <i className="fa-solid fa-user-circle"></i>
+                  <span>내 프로필</span>
+                </MenuItem>
+                <MenuItem 
+                  onClick={handleLogout}
+                  custom={1}
+                  variants={menuItemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  <i className="fa-solid fa-sign-out-alt"></i>
+                  <span>로그아웃</span>
+                </MenuItem>
+                <MenuItem 
+                  onClick={() => {
+                    if (resetHome) resetHome();
+                    handleNavigation('/');
+                  }}
+                  custom={2}
+                  variants={menuItemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  <i className="fa-solid fa-home"></i>
+                  <span>홈으로</span>
+                </MenuItem>
+              </MenuContainer>
+            )}
+          </AnimatePresence>
         </NavButtons>
       </HeaderContainer>
-      
-      <AnimatePresence>
-        {showMenu && loginId && (
-          <MenuContainer
-            variants={menuVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
-            <MenuItem 
-              onClick={() => handleNavigation('/mypage')}
-              custom={0}
-              variants={menuItemVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <i className="fa-solid fa-user-circle"></i>
-              <span>내 프로필</span>
-            </MenuItem>
-            <MenuItem 
-              onClick={handleLogout}
-              custom={1}
-              variants={menuItemVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <i className="fa-solid fa-sign-out-alt"></i>
-              <span>로그아웃</span>
-            </MenuItem>
-            <MenuItem 
-              onClick={() => {
-                if (resetHome) resetHome();
-                handleNavigation('/');
-              }}
-              custom={2}
-              variants={menuItemVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <i className="fa-solid fa-home"></i>
-              <span>홈으로</span>
-            </MenuItem>
-          </MenuContainer>
-        )}
-      </AnimatePresence>
     </>
   );
 };
