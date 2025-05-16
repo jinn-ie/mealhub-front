@@ -224,11 +224,8 @@ const FoodRecommendation = ({ showRec, result, userInfo, skipMenu, setView, setI
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => {
-            if (!userInfo) {
-              alert("유저 정보를 불러오는 중입니다...");
-            } else {
-              // getLocation() 함수 호출
-            }
+            const getLocationEvent = new CustomEvent('getLocation');
+            window.dispatchEvent(getLocationEvent);
           }}
         >
           <i className="fa-solid fa-wand-magic-sparkles"></i>

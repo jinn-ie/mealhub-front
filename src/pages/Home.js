@@ -293,6 +293,26 @@ function Home() {
       window.removeEventListener('toggleParty', handleToggleParty);
     };
   }, [view.showParty]);
+  
+  // getLocation 이벤트 리스너 추가
+  useEffect(() => {
+    const handleGetLocation = () => {
+      console.log("getLocation 이벤트 발생");
+      if (!userInfo && loading) {
+        alert("유저 정보를 불러오는 중입니다...");
+      } else {
+        getLocation();
+      }
+    };
+    
+    // 이벤트 리스너 등록
+    window.addEventListener('getLocation', handleGetLocation);
+    
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      window.removeEventListener('getLocation', handleGetLocation);
+    };
+  }, [userInfo, loading, getLocation]);
 
   return (
     <HomeContainer
