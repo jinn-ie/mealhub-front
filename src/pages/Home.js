@@ -158,10 +158,18 @@ function Home() {
 
   const getLocation = () => {
     setLoad(true);
+    console.log("위치 정보 요청 시작");
     
     if (navigator.geolocation) {
+      const geoOptions = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      };
+      
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log("위치 정보 획득 성공");
           const latitude = position.coords.latitude;
           const longitude = position.coords.longitude;
           
@@ -173,17 +181,39 @@ function Home() {
           setLoad(false);
         },
         (error) => {
-          console.error("위치 정보를 가져오지 못했습니다.", error);
+          console.error("위치 정보 획득 실패:", error.code, error.message);
+          // 에러 코드별 메시지 처리
+          let errorMessage = "";
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = "위치 정보 접근 권한이 거부되었습니다.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = "위치 정보를 사용할 수 없습니다.";
+              break;
+            case error.TIMEOUT:
+              errorMessage = "위치 정보 요청 시간이 초과되었습니다.";
+              break;
+            default:
+              errorMessage = "알 수 없는 오류가 발생했습니다.";
+          }
+          
+          alert(errorMessage);
+          
+          // 기본 위치로 서울 설정
           setUserLocation({
             lat: 37.5665,
             lng: 126.9780
           });
           
           setLoad(false);
-        }
+        },
+        geoOptions
       );
     } else {
       console.error("이 브라우저에서는 위치 정보가 지원되지 않습니다.");
+      alert("이 브라우저에서는 위치 정보가 지원되지 않습니다. 기본 위치(서울)로 설정합니다.");
+      
       setUserLocation({
         lat: 37.5665,
         lng: 126.9780
@@ -200,6 +230,7 @@ function Home() {
 
   const fetchRecommendation = (lat, lng) => {
     setLoad(true);
+    console.log("음식 추천 요청:", { lat, lng, user_id: userInfo?.id || 'guest' });
 
     fetch("https://mealhub.duckdns.org/api/recommend/", {
       method: "POST",
@@ -213,22 +244,43 @@ function Home() {
         user_id: userInfo?.id || 'guest',
       }),
     })
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`API 응답 오류: ${res.status} ${res.statusText}`);
+      }
+      return res.json();
+    })
     .then(body => {
-      const menuName = body.recommendations[0].menu_name;
+      console.log("추천 응답 데이터:", body);
+      
+      // 응답 데이터 유효성 검사
+      if (!body || !body.recommendations || body.recommendations.length === 0) {
+        throw new Error('유효한 추천 데이터가 없습니다.');
+      }
+      
+      const recommendation = body.recommendations[0];
+      if (!recommendation.menu_name || !recommendation.menu_id) {
+        throw new Error('필수 메뉴 정보가 없습니다.');
+      }
+      
+      const menuName = recommendation.menu_name;
       setResult({
-        menu_id: body.recommendations[0].menu_id,
+        menu_id: recommendation.menu_id,
         menu_name: menuName,
         imageUrl: foodData[menuName]?.url || 'https://via.placeholder.com/400x300?text=음식+이미지'
       });
       setView('showRec', true);
     })
     .catch(err => {
-      console.error("추천 요청 오류:", err);
+      console.error("추천 요청 오류:", err.message || err);
+      
       // 임시 데이터로 처리 (API 실패시)
-      const tempMenu = "비빔밥";
+      const fallbackMenus = ["비빔밥", "김치찌개", "삼겹살", "불고기", "냉면"];
+      const randomIndex = Math.floor(Math.random() * fallbackMenus.length);
+      const tempMenu = fallbackMenus[randomIndex];
+      
       setResult({
-        menu_id: 1,
+        menu_id: randomIndex + 1,
         menu_name: tempMenu,
         imageUrl: foodData[tempMenu]?.url || 'https://via.placeholder.com/400x300?text=음식+이미지'
       });
@@ -240,28 +292,49 @@ function Home() {
   };
 
   const skipMenu = () => {
-    if (!result || !result.menu_id) return;
+    if (!result || !result.menu_id) {
+      console.error("스킵할 메뉴 정보가 없습니다.");
+      return;
+    }
     
-    // 불만족 피드백 전송
-    fetch("https://mealhub.duckdns.org/api/feedback/skip", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        user_id: userInfo?.id || 'guest',
-        menu_id: result.menu_id,
-        timestamp: new Date().toISOString().slice(0, -1),
-        lat: userLocation.lat,
-        lon: userLocation.lng
+    // 불만족 피드백 전송 (로그인 상태일 경우에만)
+    if (userInfo && userInfo.id) {
+      fetch("https://mealhub.duckdns.org/api/feedback/skip", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user_id: userInfo.id,
+          menu_id: result.menu_id,
+          timestamp: new Date().toISOString().slice(0, -1),
+          lat: userLocation?.lat || 37.5665,
+          lon: userLocation?.lng || 126.9780
+        })
       })
-    }).catch(err => console.error("피드백 전송 오류:", err));
+      .then(res => {
+        if (!res.ok) {
+          console.error("피드백 전송 실패:", res.status, res.statusText);
+        } else {
+          console.log("피드백 전송 성공");
+        }
+      })
+      .catch(err => console.error("피드백 전송 오류:", err));
+    } else {
+      console.log("비로그인 상태: 피드백 전송 건너뜀");
+    }
 
     // 지도 숨기기
     setView('showMap', false);
 
     // 새로운 추천 요청
-    fetchRecommendation(userLocation.lat, userLocation.lng);
+    if (userLocation) {
+      fetchRecommendation(userLocation.lat, userLocation.lng);
+    } else {
+      // 위치 정보가 없는 경우 기본 위치로 요청
+      console.log("위치 정보가 없어 기본 위치로 요청합니다.");
+      fetchRecommendation(37.5665, 126.9780);
+    }
   };
 
   useEffect(() => {

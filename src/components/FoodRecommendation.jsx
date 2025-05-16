@@ -270,8 +270,11 @@ const FoodRecommendation = ({ showRec, result, userInfo, skipMenu, setView, setI
           variants={itemVariants}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          disabled={!userInfo}
           onClick={() => {
+            if (!userInfo) {
+              alert("로그인이 필요한 기능입니다.");
+              return;
+            }
             setView('showMap', true);
             setIsHeightChanged(true);
           }}
@@ -284,7 +287,6 @@ const FoodRecommendation = ({ showRec, result, userInfo, skipMenu, setView, setI
           variants={itemVariants}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          disabled={!userInfo}
           onClick={() => {
             skipMenu();
             setIsHeightChanged(true);
